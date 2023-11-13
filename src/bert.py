@@ -2,6 +2,7 @@ import json
 
 import numpy as np
 import pandas as pd
+import nltk
 import torch
 from nltk.corpus import stopwords
 from string import punctuation
@@ -10,7 +11,7 @@ from torch import optim
 from wordcloud import WordCloud
 import matplotlib.pyplot as plt
 from sklearn.utils import shuffle
-from transformers import DistilBertTokenizer, DistilBertForSequenceClassification
+from transformers import BertTokenizer, BertForSequenceClassification
 import torch.nn as nn
 import torch.nn.functional as functional
 
@@ -58,15 +59,26 @@ def import_data():
     true_data = pd.read_csv("../data/True.csv")
     fake_data = pd.read_csv("../data/Fake.csv")
 
+
 def normalize_data():
     global true_data
     global fake_data
 
-    true_data["text"] = true_data["title"] + " - Subject: " + true_data["subject"] + " - " + true_data["text"]
-    fake_data["text"] = fake_data["title"] + " - Subject: " + fake_data["subject"] + " - " + fake_data["text"]
+    true_data['text'] = true_data.text.apply(normalize_string)
+    fake_data['text'] = fake_data.text.apply(normalize_string)
 
     true_data['label'] = False
     fake_data['label'] = True
+
+
+def normalize_string(s):
+    stops = stopwords.words('english')
+
+    aux = s.lower()
+    aux = ''.join(x for x in aux if x not in punctuation)
+    aux = ''.join(x for x in aux if x not in stops)
+    return aux
+
 
 def shuffle_and_split_data():
     global true_data
@@ -84,14 +96,15 @@ def shuffle_and_split_data():
     validate_data = validate_data.reset_index(drop=True)
     test_data = test_data.reset_index(drop=True)
 
+
 def prepare_network():
     global tokenizer
     global model
     global criterion
     global optimizer
 
-    tokenizer = DistilBertTokenizer.from_pretrained("distilbert-base-uncased")
-    model = DistilBertForSequenceClassification.from_pretrained("distilbert-base-uncased")
+    tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
+    model = BertForSequenceClassification.from_pretrained("bert-base-uncased")
     model.config.num_labels = 1
 
     for param in model.parameters():
@@ -108,6 +121,7 @@ def prepare_network():
 
     criterion = nn.MSELoss()
     optimizer = optim.SGD(model.classifier.parameters(), lr=0.01)
+
 
 def train_model():
     global model
@@ -252,6 +266,7 @@ def test_model():
     plt.plot(all_accuracies)
     plt.show()
 
+
 def preprocess_text(text):
     global tokenizer
 
@@ -271,6 +286,7 @@ def preprocess_text(text):
 
 
 def test_random(txt):
+    txt = normalize_string(txt)
     text_parts = preprocess_text(txt)
     overall_output = torch.zeros((1, 2))
     for part in text_parts:

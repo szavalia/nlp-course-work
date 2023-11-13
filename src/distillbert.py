@@ -55,8 +55,8 @@ def import_data():
     global true_data
     global fake_data
 
-    true_data = pd.read_csv("../data/True.csv")
-    fake_data = pd.read_csv("../data/Fake.csv")
+    true_data = pd.read_csv("./data/True.csv")
+    fake_data = pd.read_csv("./data/Fake.csv")
 
 def normalize_data():
     global true_data
